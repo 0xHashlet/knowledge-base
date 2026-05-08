@@ -28,7 +28,10 @@ class FakePermissionRepository:
         knowledge_base_id: uuid.UUID,
         allowed_roles: set[KnowledgeBaseMemberRole] | None = None,
     ) -> bool:
-        for member in self.knowledge_base.members:
+        knowledge_base = self.get_knowledge_base(knowledge_base_id)
+        if knowledge_base is None:
+            return False
+        for member in knowledge_base.members:
             if member.user_id == user_id and member.knowledge_base_id == knowledge_base_id:
                 return allowed_roles is None or member.role in allowed_roles
         return False

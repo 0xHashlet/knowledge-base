@@ -2,14 +2,15 @@ services:
   api:
     build: .
     command: >
-      sh -c "alembic upgrade head &&
-             uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+      sh -c "uv run alembic upgrade head &&
+             uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     env_file:
       - .env.example
     ports:
       - "8000:8000"
     volumes:
       - .:/app
+      - /app/.venv
     depends_on:
       postgres:
         condition: service_healthy
@@ -18,11 +19,12 @@ services:
 
   celery-worker:
     build: .
-    command: celery -A app.workers.celery_app.celery_app worker --loglevel=INFO
+    command: uv run celery -A app.workers.celery_app.celery_app worker --loglevel=INFO
     env_file:
       - .env.example
     volumes:
       - .:/app
+      - /app/.venv
     depends_on:
       postgres:
         condition: service_healthy

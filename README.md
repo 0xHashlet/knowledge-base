@@ -28,6 +28,7 @@
 - Docker Compose 编排：`api`、`postgres`、`redis`、`celery-worker`
 - Celery worker 基础骨架
 - pytest 基础测试结构
+- uv 依赖管理与锁文件
 - 企业 RAG 核心数据模型
 
 ### 阶段 2：认证、组织与权限体系
@@ -60,6 +61,7 @@
 - Redis
 - Celery
 - pytest
+- uv
 - Docker Compose
 
 ## 目录结构
@@ -77,6 +79,7 @@ app/
 tests/                 pytest 测试
 docker-compose.yml     本地服务编排
 pyproject.toml         项目依赖与工具配置
+uv.lock                uv 依赖锁文件
 ```
 
 后端分层约定：
@@ -149,6 +152,18 @@ DELETE /api/v1/knowledge-bases/{knowledge_base_id}/members/{user_id}
 
 ## 本地启动
 
+安装 uv：
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+同步依赖：
+
+```bash
+uv sync --extra dev
+```
+
 复制环境变量文件：
 
 ```bash
@@ -164,7 +179,7 @@ docker compose up --build
 执行数据库迁移：
 
 ```bash
-docker compose run --rm api alembic upgrade head
+docker compose run --rm api uv run alembic upgrade head
 ```
 
 健康检查：
@@ -178,16 +193,20 @@ curl http://localhost:8000/api/v1/health
 在 Docker 环境中运行：
 
 ```bash
-docker compose run --rm api pytest
+docker compose run --rm api uv run pytest
 ```
 
-如果使用本机 Python 环境，建议使用 Python 3.12，并在安装依赖后运行：
+如果使用本机环境，建议通过 uv 同步依赖后运行：
 
 ```bash
-python -m pytest
+uv run pytest
 ```
 
-当前工作区所在机器缺少可用的 Python、pytest 和 Docker 命令，因此测试需要在具备 Docker 或 Python 3.12 的环境中执行。
+如果只想执行迁移：
+
+```bash
+uv run alembic upgrade head
+```
 
 ## 开发规范
 
