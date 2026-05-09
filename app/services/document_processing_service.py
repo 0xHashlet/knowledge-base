@@ -42,26 +42,31 @@ class DocumentProcessingService:
                 embedding_model=self.embedding_model,
             )
             self._maybe_embed(chunks)
-            return {"document_version_id": str(document_version_id), "status": "parsed"}
+            self.repository.mark_version_ready(updated_version)
+            return {"document_version_id": str(document_version_id), "status": "ready"}
         except Exception as exc:
             self.repository.mark_version_failed(version, str(exc))
             return {"document_version_id": str(document_version_id), "status": "failed"}
 
+    _EMBED_BATCH_SIZE = 10
+
     def _maybe_embed(self, chunks: list) -> None:
         if not self.embedding_service or not self.embedding_store or not chunks:
             return
-        texts = [chunk.content for chunk in chunks]
-        vectors = self.embedding_service.embed(texts)
         self.embedding_store.ensure_collection()
-        records = [
-            EmbeddingRecord(
-                chunk_id=chunk.id,
-                knowledge_base_id=chunk.knowledge_base_id,
-                document_id=chunk.document_id,
-                document_version_id=chunk.document_version_id,
-                embedding_model=self.embedding_model,
-                vector=vec,
-            )
-            for chunk, vec in zip(chunks, vectors)
-        ]
-        self.embedding_store.upsert(records)
+        for i in range(0, len(chunks), self._EMBED_BATCH_SIZE):
+            batch = chunks[i : i + self._EMBED_BATCH_SIZE]
+            texts = [chunk.content for chunk in batch]
+            vectors = self.embedding_service.embed(texts)
+            records = [
+                EmbeddingRecord(
+                    chunk_id=chunk.id,
+                    knowledge_base_id=chunk.knowledge_base_id,
+                    document_id=chunk.document_id,
+                    document_version_id=chunk.document_version_id,
+                    embedding_model=self.embedding_model,
+                    vector=vec,
+                )
+                for chunk, vec in zip(batch, vectors)
+            ]
+            self.embedding_store.upsert(records)

@@ -45,18 +45,13 @@ class ChunkService:
         normalized = text.strip()
         if not normalized:
             return []
+        # 先按段落分，再对超长段落按字符数切分
+        paragraphs = [p.strip() for p in normalized.split("\n") if p.strip()]
         chunks: list[str] = []
-        current_words: list[str] = []
-        current_size = 0
-        for word in normalized.split():
-            next_size = len(word) if not current_words else current_size + 1 + len(word)
-            if current_words and next_size > self.chunk_size:
-                chunks.append(" ".join(current_words))
-                current_words = [word]
-                current_size = len(word)
+        for para in paragraphs:
+            if len(para) <= self.chunk_size:
+                chunks.append(para)
             else:
-                current_words.append(word)
-                current_size = next_size
-        if current_words:
-            chunks.append(" ".join(current_words))
+                for i in range(0, len(para), self.chunk_size - self.chunk_overlap):
+                    chunks.append(para[i : i + self.chunk_size])
         return chunks

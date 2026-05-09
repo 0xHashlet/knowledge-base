@@ -95,6 +95,10 @@ class DocumentRepository(SqlAlchemyRepository[Document]):
         version.error_message = error_message
         return self._commit_version(version)
 
+    def mark_version_ready(self, version: DocumentVersion) -> DocumentVersion:
+        version.status = DocumentVersionStatus.READY
+        return self._commit_version(version)
+
     def replace_chunks_for_version(
         self,
         version: DocumentVersion,
