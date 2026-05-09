@@ -1,10 +1,13 @@
-import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
-import { FileUp, Library, LogOut, MessageSquare, Plus, RefreshCw, UploadCloud } from "lucide-react";
+import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FileUp, Library, LogOut, MessageSquare, Plus, RefreshCw, Trash2, UploadCloud } from "lucide-react";
 
 import {
   createKnowledgeBase,
+  deleteDocument,
+  DocumentRead,
   DocumentUploadResult,
   KnowledgeBase,
+  listDocuments,
   listKnowledgeBases,
   uploadDocument,
 } from "../api/client";
@@ -33,6 +36,9 @@ export function KnowledgeBasePage() {
   const [form, setForm] = useState<CreateFormState>(emptyForm);
   const [file, setFile] = useState<File | null>(null);
   const [uploadResult, setUploadResult] = useState<DocumentUploadResult | null>(null);
+  const [documents, setDocuments] = useState<DocumentRead[]>([]);
+  const [docsLoading, setDocsLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
@@ -66,9 +72,30 @@ export function KnowledgeBasePage() {
     }
   }
 
+  const loadDocumentsList = useCallback(async () => {
+    if (!selected) return;
+    setDocsLoading(true);
+    try {
+      const data = await listDocuments(selected.id);
+      setDocuments(data);
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "加载文档列表失败");
+    } finally {
+      setDocsLoading(false);
+    }
+  }, [selected]);
+
   useEffect(() => {
     void loadKnowledgeBases();
   }, []);
+
+  useEffect(() => {
+    if (selected) {
+      void loadDocumentsList();
+    } else {
+      setDocuments([]);
+    }
+  }, [selected, loadDocumentsList]);
 
   async function handleCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -102,6 +129,7 @@ export function KnowledgeBasePage() {
       const result = await uploadDocument(selected.id, file);
       setUploadResult(result);
       setFile(null);
+      void loadDocumentsList();
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "上传失败");
     } finally {
@@ -111,6 +139,19 @@ export function KnowledgeBasePage() {
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     setFile(event.target.files?.[0] ?? null);
+  }
+
+  async function handleDelete(documentId: string) {
+    if (!selected || !window.confirm("确认删除该文档？")) return;
+    setDeletingId(documentId);
+    try {
+      await deleteDocument(selected.id, documentId);
+      setDocuments((prev) => prev.filter((d) => d.id !== documentId));
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "删除失败");
+    } finally {
+      setDeletingId("");
+    }
   }
 
   return (
@@ -271,6 +312,64 @@ export function KnowledgeBasePage() {
                   <span>storage_path: {uploadResult.storage_path}</span>
                 </div>
               ) : null}
+            </section>
+
+            <section className="panel wide-panel">
+              <div className="panel-title">
+                <h2>文档列表</h2>
+                <span>{documents.length}</span>
+              </div>
+              {selected ? (
+                docsLoading ? (
+                  <p className="muted">加载中...</p>
+                ) : documents.length === 0 ? (
+                  <p className="muted">暂无文档，请上传</p>
+                ) : (
+                  <div className="doc-table">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>文档名</th>
+                          <th>版本</th>
+                          <th>状态</th>
+                          <th>上传时间</th>
+                          <th>操作</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {documents.map((doc) => (
+                          <tr key={doc.id}>
+                            <td className="doc-name">{doc.title}</td>
+                            <td>v{doc.current_version?.version_number ?? "-"}</td>
+                            <td>
+                              <span className={`doc-status doc-status--${doc.current_version?.status ?? "unknown"}`}>
+                                {doc.current_version?.status ?? doc.status}
+                              </span>
+                            </td>
+                            <td className="doc-time">
+                              {doc.current_version?.created_at
+                                ? new Date(doc.current_version.created_at).toLocaleString("zh-CN")
+                                : "-"}
+                            </td>
+                            <td>
+                              <button
+                                className="doc-delete-btn"
+                                onClick={() => handleDelete(doc.id)}
+                                disabled={deletingId === doc.id}
+                                title="删除文档"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )
+              ) : (
+                <p className="muted">请先选择知识库</p>
+              )}
             </section>
           </section>
         </main>

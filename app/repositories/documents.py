@@ -51,6 +51,24 @@ class DocumentRepository(SqlAlchemyRepository[Document]):
         self.db.refresh(document)
         return document
 
+    def list_documents_by_kb(
+        self, knowledge_base_id: uuid.UUID, *, offset: int = 0, limit: int = 50
+    ) -> list[Document]:
+        statement = (
+            select(Document)
+            .where(
+                Document.knowledge_base_id == knowledge_base_id,
+                Document.status != "deleted",
+            )
+            .order_by(Document.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+        )
+        return list(self.db.scalars(statement).all())
+
+    def get_document_with_version(self, document_id: uuid.UUID) -> Document | None:
+        return self.db.get(Document, document_id)
+
     def get_version(self, version_id: uuid.UUID) -> DocumentVersion | None:
         return self.db.get(DocumentVersion, version_id)
 

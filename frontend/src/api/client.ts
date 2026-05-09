@@ -27,6 +27,24 @@ export type DocumentUploadResult = {
   status: string;
 };
 
+export type DocumentVersionRead = {
+  id: string;
+  version_number: number;
+  file_name: string;
+  file_type: string;
+  file_size: number;
+  status: string;
+  error_message: string | null;
+  created_at: string;
+};
+
+export type DocumentRead = {
+  id: string;
+  title: string;
+  status: string;
+  current_version: DocumentVersionRead | null;
+};
+
 export type QaAskResponse = {
   session_id: string;
   message: {
@@ -137,6 +155,24 @@ export async function askQuestion(
       session_id: sessionId ?? null,
     }),
   });
+}
+
+export async function listDocuments(knowledgeBaseId: string): Promise<DocumentRead[]> {
+  return request<DocumentRead[]>(`/knowledge-bases/${knowledgeBaseId}/documents`);
+}
+
+export async function deleteDocument(knowledgeBaseId: string, documentId: string): Promise<void> {
+  const headers = new Headers();
+  const token = getStoredToken();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  const resp = await fetch(`${API_BASE_URL}/knowledge-bases/${knowledgeBaseId}/documents/${documentId}`, {
+    method: "DELETE",
+    headers,
+  });
+  if (!resp.ok) {
+    const payload = await resp.json().catch(() => ({} as Record<string, unknown>));
+    throw new Error(typeof payload.detail === "string" ? payload.detail : "删除失败");
+  }
 }
 
 export async function submitFeedbackApi(

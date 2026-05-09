@@ -1,15 +1,54 @@
 import uuid
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db, get_permission_service
 from app.models.user import User
-from app.schemas.document import DocumentUploadRead
+from app.repositories.documents import DocumentRepository
+from app.schemas.document import DocumentRead, DocumentUploadRead, DocumentVersionRead
 from app.services.document_upload_service import DocumentUploadService, UploadDocumentCommand
 from app.services.permission_service import PermissionService
 
 router = APIRouter(prefix="/knowledge-bases/{knowledge_base_id}/documents", tags=["documents"])
+
+
+@router.get("", response_model=list[DocumentRead])
+def list_documents(
+    knowledge_base_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    permission_service: PermissionService = Depends(get_permission_service),
+    db: Session = Depends(get_db),
+) -> list[DocumentRead]:
+    if not permission_service.can_access_knowledge_base(current_user, knowledge_base_id):
+        raise HTTPException(status_code=403, detail="Knowledge base access denied")
+    repo = DocumentRepository(db)
+    docs = repo.list_documents_by_kb(knowledge_base_id)
+    result = []
+    for doc in docs:
+        current_ver = repo.get_version(doc.current_version_id) if doc.current_version_id else None
+        result.append(
+            DocumentRead(
+                id=doc.id,
+                title=doc.title,
+                status=doc.status,
+                current_version=(
+                    DocumentVersionRead(
+                        id=current_ver.id,
+                        version_number=current_ver.version_number,
+                        file_name=current_ver.file_name,
+                        file_type=current_ver.file_type,
+                        file_size=current_ver.file_size,
+                        status=current_ver.status,
+                        error_message=current_ver.error_message,
+                        created_at=current_ver.created_at,
+                    )
+                    if current_ver
+                    else None
+                ),
+            )
+        )
+    return result
 
 
 @router.post("", response_model=DocumentUploadRead, status_code=status.HTTP_201_CREATED)
@@ -47,3 +86,21 @@ async def upload_document(
         storage_path=result.version.storage_path,
         status=result.version.status,
     )
+
+
+@router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_document(
+    knowledge_base_id: uuid.UUID,
+    document_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    permission_service: PermissionService = Depends(get_permission_service),
+    db: Session = Depends(get_db),
+) -> Response:
+    if not permission_service.can_access_knowledge_base(current_user, knowledge_base_id):
+        raise HTTPException(status_code=403, detail="Knowledge base access denied")
+    repo = DocumentRepository(db)
+    doc = repo.get_document_with_version(document_id)
+    if doc is None or doc.knowledge_base_id != knowledge_base_id:
+        raise HTTPException(status_code=404, detail="Document not found")
+    repo.delete(doc)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

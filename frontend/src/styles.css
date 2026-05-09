@@ -511,3 +511,80 @@ dd {
   background: #94a3b8;
   cursor: not-allowed;
 }
+
+/* ── Document Table ── */
+.doc-table {
+  overflow-x: auto;
+}
+
+.doc-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.doc-table th,
+.doc-table td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.doc-table th {
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.82rem;
+}
+
+.doc-table .doc-name {
+  font-weight: 500;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.doc-table .doc-time {
+  color: #94a3b8;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.doc-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.doc-status--uploaded { background: #e2e8f0; color: #475569; }
+.doc-status--parsing  { background: #fef3c7; color: #92400e; }
+.doc-status--parsed   { background: #dbeafe; color: #1e40af; }
+.doc-status--embedding{ background: #e0e7ff; color: #3730a3; }
+.doc-status--ready    { background: #bbf7d0; color: #14532d; }
+.doc-status--failed   { background: #fecaca; color: #991b1b; }
+
+.doc-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #fff;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.doc-delete-btn:hover {
+  color: #dc2626;
+  border-color: #dc2626;
+}
+
+.doc-delete-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
