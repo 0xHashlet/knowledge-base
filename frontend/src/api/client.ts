@@ -27,6 +27,25 @@ export type DocumentUploadResult = {
   status: string;
 };
 
+export type QaAskResponse = {
+  session_id: string;
+  message: {
+    id: string;
+    role: "user" | "assistant";
+    content: string;
+    citations: Citation[];
+    created_at: string;
+  };
+};
+
+export type Citation = {
+  document_id: string;
+  document_title: string;
+  chunk_id: string;
+  chunk_text: string;
+  relevance_score: number | null;
+};
+
 export function getStoredToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
 }
@@ -101,5 +120,33 @@ export async function uploadDocument(
   return request<DocumentUploadResult>(`/knowledge-bases/${knowledgeBaseId}/documents`, {
     method: "POST",
     body,
+  });
+}
+
+export async function askQuestion(
+  question: string,
+  knowledgeBaseIds: string[],
+  sessionId?: string | null,
+): Promise<QaAskResponse> {
+  return request<QaAskResponse>("/qa/ask", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      question,
+      knowledge_base_ids: knowledgeBaseIds,
+      session_id: sessionId ?? null,
+    }),
+  });
+}
+
+export async function submitFeedbackApi(
+  messageId: string,
+  rating: "up" | "down",
+  comment?: string,
+): Promise<unknown> {
+  return request<unknown>("/feedback", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message_id: messageId, rating, comment: comment ?? null }),
   });
 }
