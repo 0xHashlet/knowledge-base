@@ -4,9 +4,9 @@
 
 **Goal:** Build the runnable foundation for an enterprise RAG knowledge-base QA platform with API, database, migrations, worker wiring, and core data models.
 
-**Architecture:** A FastAPI application owns synchronous API traffic, SQLAlchemy 2.x models define the business schema, Alembic manages PostgreSQL migrations, and Celery workers consume Redis-backed asynchronous document-processing jobs. pgvector is enabled in PostgreSQL and represented on chunk rows for later hybrid search.
+**Architecture:** A FastAPI application owns synchronous API traffic, SQLAlchemy 2.x models define the business schema, Alembic manages PostgreSQL migrations, and Celery workers consume Redis-backed asynchronous document-processing jobs. Milvus owns embedding storage and vector retrieval, while PostgreSQL keeps chunk text, ACL snapshots, and citation metadata.
 
-**Tech Stack:** Python 3.12, FastAPI, SQLAlchemy 2.x, Alembic, PostgreSQL with pgvector, Redis, Celery, pytest, Docker Compose.
+**Tech Stack:** Python 3.12, FastAPI, SQLAlchemy 2.x, Alembic, PostgreSQL, Milvus, Redis, Celery, pytest, Docker Compose.
 
 ---
 
@@ -61,7 +61,7 @@
 - Create: `app/db/migrations/versions/20260508_0001_initial_schema.py`
 
 - [ ] Configure Alembic to read the application database URL.
-- [ ] Add initial schema migration including `vector(1536)` and indexes.
+- [ ] Add initial schema migration for business metadata and chunk text; keep embedding vectors in Milvus.
 
 ### Task 5: Worker and Deployment Skeleton
 

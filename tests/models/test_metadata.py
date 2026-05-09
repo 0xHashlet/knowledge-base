@@ -25,3 +25,11 @@ def test_metadata_contains_enterprise_rag_core_tables():
     }
 
     assert expected_tables.issubset(set(Base.metadata.tables))
+
+
+def test_document_chunks_keep_metadata_but_not_postgres_embedding_column():
+    columns = Base.metadata.tables["document_chunks"].columns
+
+    assert "document_chunks" in Base.metadata.tables
+    assert "embedding_model" in columns
+    assert "embedding" not in columns

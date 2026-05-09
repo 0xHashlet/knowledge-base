@@ -13,7 +13,6 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.execute("CREATE EXTENSION IF NOT EXISTS vector")
     op.execute(
         """
         CREATE TYPE knowledge_base_visibility AS ENUM ('PRIVATE', 'DEPARTMENT', 'COMPANY');
@@ -151,7 +150,6 @@ def upgrade() -> None:
             page_start INTEGER,
             page_end INTEGER,
             embedding_model VARCHAR(120),
-            embedding vector(1536),
             search_vector TSVECTOR,
             metadata JSONB NOT NULL DEFAULT '{}',
             acl_snapshot JSONB NOT NULL DEFAULT '{}',
@@ -162,7 +160,6 @@ def upgrade() -> None:
         );
         CREATE INDEX ix_document_chunks_kb_version ON document_chunks(knowledge_base_id, document_version_id);
         CREATE INDEX ix_document_chunks_search_vector ON document_chunks USING gin(search_vector);
-        CREATE INDEX ix_document_chunks_embedding ON document_chunks USING ivfflat (embedding vector_cosine_ops);
 
         CREATE TABLE qa_sessions (
             id UUID PRIMARY KEY,

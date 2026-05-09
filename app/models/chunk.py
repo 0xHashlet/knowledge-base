@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import uuid
 
-from pgvector.sqlalchemy import Vector
 from sqlalchemy import Boolean, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -21,7 +20,6 @@ class DocumentChunk(UuidPrimaryKeyMixin, TimestampMixin, Base):
         ),
         Index("ix_document_chunks_kb_version", "knowledge_base_id", "document_version_id"),
         Index("ix_document_chunks_search_vector", "search_vector", postgresql_using="gin"),
-        Index("ix_document_chunks_embedding", "embedding", postgresql_using="ivfflat"),
     )
 
     knowledge_base_id: Mapped[uuid.UUID] = mapped_column(
@@ -46,7 +44,6 @@ class DocumentChunk(UuidPrimaryKeyMixin, TimestampMixin, Base):
     page_start: Mapped[int | None] = mapped_column(Integer)
     page_end: Mapped[int | None] = mapped_column(Integer)
     embedding_model: Mapped[str | None] = mapped_column(String(120))
-    embedding: Mapped[list[float] | None] = mapped_column(Vector(1536))
     search_vector: Mapped[str | None] = mapped_column(TSVECTOR)
     metadata_: Mapped[dict] = mapped_column("metadata", JSONB, default=dict, nullable=False)
     acl_snapshot: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)

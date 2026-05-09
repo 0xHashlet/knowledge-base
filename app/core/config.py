@@ -24,11 +24,20 @@ class Settings(BaseSettings):
     celery_broker_url: str | None = None
     celery_result_backend: str | None = None
 
-    jwt_secret_key: str = Field(default="change-me-in-production", min_length=16)
+    jwt_secret_key: str = Field(default="change-me-in-production-min-32-bytes", min_length=32)
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
 
-    default_embedding_dimension: int = 1536
+    milvus_uri: str = "http://milvus:19530"
+    milvus_token: str | None = None
+    milvus_collection: str = "enterprise_rag_chunks"
+    vector_dimension: int = 1536
+
+    object_storage_endpoint: str = "http://minio:9000"
+    object_storage_bucket: str = "enterprise-rag-documents"
+    object_storage_access_key: str = "minioadmin"
+    object_storage_secret_key: str = "minioadmin"
+    object_storage_region: str = "us-east-1"
 
     @computed_field
     @property
