@@ -92,4 +92,5 @@ docker-compose.override.yml
 # Project-local generated files
 .cache/
 .local/
+.claude/
 sample_docs/
