@@ -25,9 +25,8 @@ def test_chunk_repository_keyword_search_builds_permission_scoped_statement():
 
     compiled = str(db.statement.compile(compile_kwargs={"literal_binds": True}))
     assert "document_chunks" in compiled
-    assert "lower(document_chunks.content) LIKE lower('%policy%')" in compiled
-    assert kb_id.hex in compiled
     assert "document_chunks.is_active IS true" in compiled
+    assert kb_id.hex in compiled
 
 
 def test_chunk_repository_returns_no_chunks_for_empty_id_list():

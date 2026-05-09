@@ -4,6 +4,7 @@ from sqlalchemy import select
 
 from app.models.chunk import DocumentChunk
 from app.repositories.base import SqlAlchemyRepository
+from app.services.bm25_service import Bm25SearchService, SearchableChunk
 
 
 class ChunkRepository(SqlAlchemyRepository[DocumentChunk]):
@@ -23,11 +24,16 @@ class ChunkRepository(SqlAlchemyRepository[DocumentChunk]):
             .where(
                 DocumentChunk.is_active.is_(True),
                 DocumentChunk.knowledge_base_id.in_(knowledge_base_ids),
-                DocumentChunk.content.ilike(f"%{query}%"),
             )
-            .limit(limit)
         )
-        return list(self.db.scalars(statement).all())
+        all_chunks = list(self.db.scalars(statement).all())
+        searchable = [
+            SearchableChunk(chunk_id=str(c.id), content=c.content) for c in all_chunks
+        ]
+        bm25 = Bm25SearchService(searchable)
+        results = bm25.search(query, limit=limit)
+        chunk_by_id = {c.id: c for c in all_chunks}
+        return [chunk_by_id[uuid.UUID(r.chunk_id)] for r in results if uuid.UUID(r.chunk_id) in chunk_by_id]
 
     def get_active_chunks_by_ids(self, chunk_ids: list[uuid.UUID]) -> list[DocumentChunk]:
         if not chunk_ids:
