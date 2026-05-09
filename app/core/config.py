@@ -52,6 +52,13 @@ class Settings(BaseSettings):
     rerank_model: str = "bge-reranker-v2-m3"
     rerank_top_k: int = 5
 
+    smtp_host: str = ""
+    smtp_port: int = 25
+    smtp_username: str | None = None
+    smtp_password: str | None = None
+    smtp_use_tls: bool = False
+    smtp_sender: str = "noreply@enterprise-rag.local"
+
     object_storage_endpoint: str = "http://minio:9000"
     object_storage_bucket: str = "enterprise-rag-documents"
     object_storage_access_key: str = "minioadmin"
