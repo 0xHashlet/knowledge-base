@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 from app.models.chunk import DocumentChunk
 from app.models.user import User
+from app.services.rerank_service import RerankCandidate
 
 
 @dataclass(frozen=True)
@@ -13,10 +14,12 @@ class RetrievalResult:
 
 
 class RetrievalService:
-    def __init__(self, chunk_repository, embedding_store, permission_service):
+    def __init__(self, chunk_repository, embedding_store, permission_service,
+                 rerank_service=None):
         self.chunk_repository = chunk_repository
         self.embedding_store = embedding_store
         self.permission_service = permission_service
+        self.rerank_service = rerank_service
 
     def retrieve(
         self,
@@ -67,6 +70,15 @@ class RetrievalService:
                     )
                 )
                 seen_chunk_ids.add(chunk_id)
+
+        if self.rerank_service and merged:
+            candidates = [
+                RerankCandidate(chunk_id=str(r.chunk.id), content=r.chunk.content)
+                for r in merged
+            ]
+            reranked = self.rerank_service.rerank(query, candidates)
+            reranked_ids = {r.chunk_id for r in reranked}
+            merged = [r for r in merged if str(r.chunk.id) in reranked_ids]
 
         return merged[:limit]
 

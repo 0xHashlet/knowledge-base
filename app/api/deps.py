@@ -89,6 +89,7 @@ def get_qa_service(
     from app.services.embedding_service import create_embedding_service
     from app.services.llm_service import create_llm_service
     from app.services.qa_service import QaService
+    from app.services.rerank_service import create_rerank_service
     from app.services.retrieval_service import RetrievalService
     from app.vectorstores.milvus import MilvusEmbeddingStore
 
@@ -102,10 +103,14 @@ def get_qa_service(
         collection_name=settings.milvus_collection,
         dimension=settings.vector_dimension,
     )
+    rerank_svc = create_rerank_service(
+        settings.rerank_endpoint, settings.rerank_model, settings.rerank_top_k
+    )
     retrieval_svc = RetrievalService(
         chunk_repository=chunk_repo,
         embedding_store=milvus,
         permission_service=permission_service,
+        rerank_service=rerank_svc,
     )
     embedding_svc = create_embedding_service(
         settings.embedding_endpoint, settings.embedding_model

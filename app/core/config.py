@@ -48,6 +48,10 @@ class Settings(BaseSettings):
 
     chat_history_ttl: int = 3600
 
+    rerank_endpoint: str = "http://localhost:8080/v1"
+    rerank_model: str = "bge-reranker-v2-m3"
+    rerank_top_k: int = 5
+
     object_storage_endpoint: str = "http://minio:9000"
     object_storage_bucket: str = "enterprise-rag-documents"
     object_storage_access_key: str = "minioadmin"
