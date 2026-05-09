@@ -95,6 +95,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     throw err;
   }
   if (!response.ok) {
+    if (response.status === 401) {
+      clearToken();
+      window.location.href = "/login";
+      throw new Error("登录已过期，请重新登录");
+    }
     const payload = await response.json().catch(() => ({}));
     const message = typeof payload.detail === "string" ? payload.detail : "请求失败";
     throw new Error(message);
