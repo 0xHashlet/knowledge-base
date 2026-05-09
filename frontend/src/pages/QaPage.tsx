@@ -1,9 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
-  askQuestion,
+  askQuestionStream,
   submitFeedbackApi,
   type Citation,
-  type QaAskResponse,
 } from "../api/client";
 
 type Message = {
@@ -12,6 +11,7 @@ type Message = {
   content: string;
   citations: Citation[];
   feedback?: "up" | "down";
+  streaming?: boolean;
 };
 
 export function QaPage({
@@ -45,26 +45,42 @@ export function QaPage({
       content: question,
       citations: [],
     };
-    setMessages((prev) => [...prev, userMsg]);
+    const assistantId = crypto.randomUUID();
+    const assistantMsg: Message = {
+      id: assistantId,
+      role: "assistant",
+      content: "",
+      citations: [],
+      streaming: true,
+    };
+    setMessages((prev) => [...prev, userMsg, assistantMsg]);
 
     try {
-      const resp: QaAskResponse = await askQuestion(
-        question,
-        knowledgeBaseIds,
-        sessionId,
-      );
-      setSessionId(resp.session_id);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: resp.message.id,
-          role: "assistant",
-          content: resp.message.content,
-          citations: resp.message.citations ?? [],
-        },
-      ]);
+      for await (const event of askQuestionStream(question, knowledgeBaseIds, sessionId)) {
+        if (event.token) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId
+                ? { ...m, content: m.content + event.token }
+                : m,
+            ),
+          );
+        }
+        if (event.session_id) setSessionId(event.session_id);
+        if (event.done) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId
+                ? { ...m, streaming: false, citations: event.citations ?? [] }
+                : m,
+            ),
+          );
+        }
+        if (event.error) setError(event.error);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "问答请求失败");
+      setMessages((prev) => prev.filter((m) => m.id !== assistantId));
     } finally {
       setLoading(false);
     }
@@ -109,6 +125,7 @@ export function QaPage({
               {msg.role === "user" ? "你" : "助手"}
             </div>
             <div className="qa-message-content">{msg.content}</div>
+            {msg.streaming && <span className="qa-cursor">|</span>}
             {msg.citations.length > 0 && (
               <div className="qa-citations">
                 {msg.citations.map((c, i) => (
@@ -119,7 +136,7 @@ export function QaPage({
                 ))}
               </div>
             )}
-            {msg.role === "assistant" && (
+            {msg.role === "assistant" && !msg.streaming && (
               <div className="qa-feedback">
                 <button
                   className={`qa-feedback-btn ${msg.feedback === "up" ? "active" : ""}`}

@@ -158,6 +158,46 @@ export async function uploadDocument(
   });
 }
 
+export async function* askQuestionStream(
+  question: string,
+  knowledgeBaseIds: string[],
+  sessionId?: string | null,
+): AsyncGenerator<{ token?: string; done?: boolean; session_id?: string; message_id?: string; citations?: Citation[]; error?: string }> {
+  const headers = new Headers({ "Content-Type": "application/json" });
+  const token = getStoredToken();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  const resp = await fetch(`${API_BASE_URL}/qa/ask-stream`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      question,
+      knowledge_base_ids: knowledgeBaseIds,
+      session_id: sessionId ?? null,
+    }),
+  });
+  if (!resp.ok) {
+    if (resp.status === 401) { clearToken(); window.location.href = "/login"; throw new Error("登录已过期"); }
+    const payload = await resp.json().catch(() => ({} as Record<string, unknown>));
+    throw new Error(typeof payload.detail === "string" ? payload.detail : "请求失败");
+  }
+  const reader = resp.body?.getReader();
+  if (!reader) throw new Error("No response stream");
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n\n");
+    buffer = lines.pop() || "";
+    for (const line of lines) {
+      if (line.startsWith("data: ")) {
+        try { yield JSON.parse(line.slice(6)); } catch { /* skip malformed */ }
+      }
+    }
+  }
+}
+
 export async function askQuestion(
   question: string,
   knowledgeBaseIds: string[],

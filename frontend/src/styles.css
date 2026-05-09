@@ -466,6 +466,16 @@ dd {
   padding: 8px 0;
 }
 
+.qa-cursor {
+  animation: blink 1s step-end infinite;
+  color: #3b82f6;
+  font-weight: 700;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
 .qa-error {
   color: #dc2626;
   padding: 8px 0;

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import uuid
+from collections.abc import Generator
 
 from app.models.qa import QaSession, QaMessage, QaMessageRole
 from app.models.user import User
@@ -82,6 +83,62 @@ class QaService:
             session_id=session_id,
             history=history,
         )
+
+    def ask_stream(
+        self,
+        *,
+        user: User,
+        question: str,
+        knowledge_base_ids: list[uuid.UUID],
+        session_id: uuid.UUID | None = None,
+    ) -> Generator:
+        history = self._get_history(session_id) if session_id else []
+
+        try:
+            query_vector = self.embedding.embed([question])[0]
+        except Exception:
+            query_vector = None
+
+        results = self.retrieval.retrieve(
+            user=user,
+            knowledge_base_ids=knowledge_base_ids,
+            query=question,
+            query_vector=query_vector,
+            limit=10,
+        )
+
+        chunks = [r.chunk for r in results]
+        context = "\n\n---\n\n".join(chunk.content for chunk in chunks)
+
+        citations = []
+        for r in results:
+            doc = getattr(r.chunk, "document", None)
+            doc_title = getattr(doc, "title", "") if doc else ""
+            citations.append({
+                "document_id": str(r.chunk.document_id),
+                "document_title": doc_title,
+                "chunk_id": str(r.chunk.id),
+                "chunk_text": r.chunk.content[:200],
+                "relevance_score": r.score,
+            })
+
+        # Stream tokens
+        full_answer = ""
+        for token in self.llm.generate_stream(context=context, question=question):
+            full_answer += token
+            yield token
+
+        # Save and yield metadata
+        saved = self._save(
+            user=user,
+            question=question,
+            answer=full_answer,
+            citations=citations,
+            knowledge_base_ids=knowledge_base_ids,
+            session_id=session_id,
+            history=history,
+        )
+        yield {"session_id": str(saved["session_id"]), "citations": citations, "done": True}
 
     def _get_history(self, session_id: uuid.UUID) -> list[dict]:
         key = f"chat:{session_id}"
