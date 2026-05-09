@@ -37,6 +37,15 @@ class Settings(BaseSettings):
     embedding_endpoint: str = "http://localhost:8080/v1"
     embedding_model: str = "bge-large-zh-v1.5"
 
+    llm_endpoint: str = "http://localhost:8001/v1"
+    llm_model: str = "qwen2.5"
+    llm_temperature: float = 0.1
+    llm_max_tokens: int = 2048
+    llm_system_prompt: str = (
+        "你是一个企业知识库助手。请仅根据提供的文档内容回答问题。"
+        "如果文档内容不足以回答问题，请明确告知用户。不要编造信息。"
+    )
+
     object_storage_endpoint: str = "http://minio:9000"
     object_storage_bucket: str = "enterprise-rag-documents"
     object_storage_access_key: str = "minioadmin"
