@@ -20,28 +20,30 @@ class RerankService:
         if not candidates:
             return []
         texts = [c.content for c in candidates]
-        scores = self._client.rerank(query, texts)
+        scores = self._client(query, texts)
         ranked = sorted(zip(candidates, scores), key=lambda x: x[1], reverse=True)
         top = ranked[: self.top_k]
         return [c for c, _ in top]
 
 
-def create_rerank_service(endpoint: str, model: str, top_k: int = 5) -> RerankService:
+def create_rerank_service(endpoint: str, model: str, top_k: int = 5, api_key: str = "") -> RerankService:
     """Factory for an OpenAI-compatible rerank endpoint using httpx."""
     import httpx
 
     api_base = endpoint.rstrip("/")
 
     def _rerank(query: str, texts: list[str]) -> list[float]:
+        headers = {"Content-Type": "application/json"}
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
         resp = httpx.post(
             f"{api_base}/rerank",
             json={"model": model, "query": query, "documents": texts},
-            headers={"Content-Type": "application/json"},
+            headers=headers,
             timeout=60.0,
         )
         resp.raise_for_status()
         results = resp.json().get("results", [])
-        # Sort by index then extract relevance_score
         sorted_results = sorted(results, key=lambda r: r.get("index", 0))
         return [r.get("relevance_score", 0.0) for r in sorted_results]
 

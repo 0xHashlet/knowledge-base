@@ -51,7 +51,7 @@ class LlmService:
         user_content = f"参考文档：\n{context}\n\n问题：{question}"
         messages.append(LlmMessage(role="user", content=user_content))
 
-        return self._client.complete(messages)
+        return self._client(messages)
 
 
 def create_llm_service(
@@ -60,6 +60,7 @@ def create_llm_service(
     system_prompt: str,
     temperature: float = 0.1,
     max_tokens: int = 2048,
+    api_key: str = "",
 ) -> LlmService:
     """Factory for OpenAI-compatible chat completion endpoint using httpx."""
     import httpx
@@ -67,6 +68,9 @@ def create_llm_service(
     api_base = endpoint.rstrip("/")
 
     def _complete(messages: list[LlmMessage]) -> str:
+        headers = {"Content-Type": "application/json"}
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
         body = {
             "model": model,
             "messages": [{"role": m.role, "content": m.content} for m in messages],
@@ -76,7 +80,7 @@ def create_llm_service(
         resp = httpx.post(
             f"{api_base}/chat/completions",
             json=body,
-            headers={"Content-Type": "application/json"},
+            headers=headers,
             timeout=120.0,
         )
         resp.raise_for_status()

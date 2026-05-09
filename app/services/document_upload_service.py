@@ -24,15 +24,33 @@ class UploadDocumentResult:
     version: DocumentVersion
 
 
+_EXTENSION_MIME_MAP = {
+    ".txt": "text/plain",
+    ".md": "text/markdown",
+    ".markdown": "text/markdown",
+    ".pdf": "application/pdf",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+}
+
+_SUPPORTED_CONTENT_TYPES = set(_EXTENSION_MIME_MAP.values())
+
+
+def _resolve_content_type(filename: str, declared: str) -> str:
+    """回退到文件扩展名检测 MIME，兼容浏览器发送 application/octet-stream 的情况。"""
+    if declared and declared in _SUPPORTED_CONTENT_TYPES:
+        return declared
+    import os
+
+    ext = os.path.splitext(filename)[1].lower()
+    resolved = _EXTENSION_MIME_MAP.get(ext)
+    if resolved:
+        return resolved
+    raise ValueError(f"Unsupported document file type: {declared or 'unknown'}")
+
+
 class DocumentUploadService:
-    supported_content_types = {
-        "text/plain",
-        "text/markdown",
-        "application/pdf",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-    }
 
     def __init__(self, db_or_repository, storage=None, task_dispatcher=None):
         self.repository = db_or_repository
@@ -46,8 +64,7 @@ class DocumentUploadService:
         self.task_dispatcher = task_dispatcher
 
     def upload(self, command: UploadDocumentCommand) -> UploadDocumentResult:
-        if command.content_type not in self.supported_content_types:
-            raise ValueError(f"Unsupported document file type: {command.content_type}")
+        resolved_type = _resolve_content_type(command.filename, command.content_type)
 
         document = self.repository.get_document_by_external_id(
             command.knowledge_base_id,
@@ -70,7 +87,7 @@ class DocumentUploadService:
             knowledge_base_id=command.knowledge_base_id,
             version_number=self.repository.next_version_number(document.id),
             file_name=command.filename,
-            file_type=command.content_type,
+            file_type=resolved_type,
             file_size=len(command.content),
             storage_path="",
             content_hash=hashlib.sha256(command.content).hexdigest(),
@@ -87,7 +104,7 @@ class DocumentUploadService:
         self.storage.put_object(
             object_key=version.storage_path,
             data=command.content,
-            content_type=command.content_type,
+            content_type=resolved_type,
         )
         version = self.repository.add_version(version)
         document = self.repository.set_current_version(document, version)

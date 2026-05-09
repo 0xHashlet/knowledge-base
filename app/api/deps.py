@@ -104,7 +104,8 @@ def get_qa_service(
         dimension=settings.vector_dimension,
     )
     rerank_svc = create_rerank_service(
-        settings.rerank_endpoint, settings.rerank_model, settings.rerank_top_k
+        settings.rerank_endpoint, settings.rerank_model, settings.rerank_top_k,
+        api_key=settings.rerank_api_key,
     )
     retrieval_svc = RetrievalService(
         chunk_repository=chunk_repo,
@@ -113,7 +114,8 @@ def get_qa_service(
         rerank_service=rerank_svc,
     )
     embedding_svc = create_embedding_service(
-        settings.embedding_endpoint, settings.embedding_model
+        settings.embedding_endpoint, settings.embedding_model,
+        api_key=settings.embedding_api_key,
     )
     llm_svc = create_llm_service(
         endpoint=settings.llm_endpoint,
@@ -121,6 +123,7 @@ def get_qa_service(
         system_prompt=settings.llm_system_prompt,
         temperature=settings.llm_temperature,
         max_tokens=settings.llm_max_tokens,
+        api_key=settings.llm_api_key,
     )
     return QaService(
         db=db,

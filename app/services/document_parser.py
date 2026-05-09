@@ -26,14 +26,29 @@ _MIME_PARSER_MAP = {
     ),
 }
 
+_EXT_MIME_MAP = {
+    ".txt": "text/plain",
+    ".md": "text/markdown",
+    ".markdown": "text/markdown",
+    ".pdf": "application/pdf",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+}
+
 
 class DocumentParser:
     parser_version = "2"
 
-    def parse(self, *, file_type: str, content: bytes) -> ParsedDocument:
-        if file_type not in _MIME_PARSER_MAP:
+    def parse(self, *, file_type: str, content: bytes, file_name: str = "") -> ParsedDocument:
+        resolved = file_type
+        if resolved not in _MIME_PARSER_MAP:
+            import os
+            ext = os.path.splitext(file_name)[1].lower()
+            resolved = _EXT_MIME_MAP.get(ext, resolved)
+        if resolved not in _MIME_PARSER_MAP:
             raise ValueError(f"Unsupported document file type: {file_type}")
-        parser_name, method_name = _MIME_PARSER_MAP[file_type]
+        parser_name, method_name = _MIME_PARSER_MAP[resolved]
         parsed_text = getattr(self, method_name)(content)
         return ParsedDocument(text=parsed_text, parser_name=parser_name, parser_version=self.parser_version)
 

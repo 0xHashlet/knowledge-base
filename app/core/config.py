@@ -36,9 +36,11 @@ class Settings(BaseSettings):
 
     embedding_endpoint: str = "http://localhost:8080/v1"
     embedding_model: str = "bge-large-zh-v1.5"
+    embedding_api_key: str = ""
 
     llm_endpoint: str = "http://localhost:8001/v1"
     llm_model: str = "qwen2.5"
+    llm_api_key: str = ""
     llm_temperature: float = 0.1
     llm_max_tokens: int = 2048
     llm_system_prompt: str = (
@@ -50,6 +52,7 @@ class Settings(BaseSettings):
 
     rerank_endpoint: str = "http://localhost:8080/v1"
     rerank_model: str = "bge-reranker-v2-m3"
+    rerank_api_key: str = ""
     rerank_top_k: int = 5
 
     smtp_host: str = ""

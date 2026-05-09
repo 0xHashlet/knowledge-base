@@ -35,8 +35,13 @@ class QaService:
         # 1. Get conversation history
         history = self._get_history(session_id) if session_id else []
 
-        # 2. Generate query embedding for vector search
-        query_vector = self.embedding.embed([question])[0]
+        # 2. Generate query embedding for vector search. If the embedding
+        # service is unavailable in local/dev environments, keep keyword
+        # retrieval available instead of failing the whole QA request.
+        try:
+            query_vector = self.embedding.embed([question])[0]
+        except Exception:
+            query_vector = None
 
         # 3. Retrieve relevant chunks (permission-filtered)
         results = self.retrieval.retrieve(

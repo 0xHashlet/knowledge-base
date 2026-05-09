@@ -33,7 +33,7 @@ class DocumentProcessingService:
         try:
             self.repository.mark_version_parsing(version)
             content = self.storage.get_object(object_key=version.storage_path)
-            parsed = self.parser.parse(file_type=version.file_type, content=content)
+            parsed = self.parser.parse(file_type=version.file_type, content=content, file_name=version.file_name)
             updated_version, chunks = self.chunk_service.store_parsed_text(
                 version,
                 text=parsed.text,

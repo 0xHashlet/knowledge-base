@@ -16,7 +16,8 @@ def parse_document_version(document_version_id: str) -> dict[str, str]:
     repository = DocumentRepository(db)
     try:
         embedding_svc = create_embedding_service(
-            settings.embedding_endpoint, settings.embedding_model
+            settings.embedding_endpoint, settings.embedding_model,
+            api_key=settings.embedding_api_key,
         )
         milvus = MilvusEmbeddingStore(
             uri=settings.milvus_uri,
