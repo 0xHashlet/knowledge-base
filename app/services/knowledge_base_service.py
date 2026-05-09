@@ -56,3 +56,13 @@ class KnowledgeBaseService:
         self.repository.db.refresh(member)
         return member
 
+    def list_members(self, knowledge_base_id: uuid.UUID) -> list[KnowledgeBaseMember]:
+        return self.repository.list_members(knowledge_base_id)
+
+    def remove_member(self, knowledge_base_id: uuid.UUID, user_id: uuid.UUID) -> bool:
+        member = self.repository.get_member(knowledge_base_id, user_id)
+        if member is None:
+            return False
+        self.repository.remove_member(member)
+        return True
+

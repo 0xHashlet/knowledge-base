@@ -36,7 +36,11 @@ class KnowledgeBaseMemberCreate(ApiModel):
     role: KnowledgeBaseMemberRole = KnowledgeBaseMemberRole.VIEWER
 
 
-class KnowledgeBaseMemberRead(KnowledgeBaseMemberCreate):
+class KnowledgeBaseMemberRead(ApiModel):
     id: uuid.UUID
+    user_id: uuid.UUID
+    username: str
+    email: str
+    role: KnowledgeBaseMemberRole
     knowledge_base_id: uuid.UUID
 

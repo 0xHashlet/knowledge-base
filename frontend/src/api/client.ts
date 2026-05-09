@@ -102,6 +102,18 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+export type UserRead = {
+  id: string;
+  username: string;
+  email: string;
+  is_active: boolean;
+  is_superuser: boolean;
+};
+
+export async function getCurrentUser(): Promise<UserRead> {
+  return request<UserRead>("/auth/me");
+}
+
 export async function login(username: string, password: string): Promise<LoginResponse> {
   const body = new URLSearchParams();
   body.set("username", username);
@@ -173,6 +185,117 @@ export async function deleteDocument(knowledgeBaseId: string, documentId: string
     const payload = await resp.json().catch(() => ({} as Record<string, unknown>));
     throw new Error(typeof payload.detail === "string" ? payload.detail : "删除失败");
   }
+}
+
+export type KbMember = {
+  id: string;
+  user_id: string;
+  username: string;
+  email: string;
+  role: "owner" | "manager" | "editor" | "viewer";
+  knowledge_base_id: string;
+};
+
+export async function listMembers(kbId: string): Promise<KbMember[]> {
+  return request<KbMember[]>(`/knowledge-bases/${kbId}/members`);
+}
+
+export async function addMember(kbId: string, userId: string, role: string): Promise<KbMember> {
+  return request<KbMember>(`/knowledge-bases/${kbId}/members`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_id: userId, role }),
+  });
+}
+
+export async function removeMember(kbId: string, userId: string): Promise<void> {
+  await fetch(`${API_BASE_URL}/knowledge-bases/${kbId}/members/${userId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${getStoredToken() ?? ""}` },
+  });
+}
+
+export async function retryDocument(kbId: string, docId: string): Promise<DocumentUploadResult> {
+  return request<DocumentUploadResult>(
+    `/knowledge-bases/${kbId}/documents/${docId}/retry`,
+    { method: "POST" },
+  );
+}
+
+// ── Admin: Users ──
+
+export async function listUsers(): Promise<UserRead[]> {
+  return request<UserRead[]>("/users");
+}
+
+export async function createUser(input: { username: string; email: string; password: string }): Promise<UserRead> {
+  return request<UserRead>("/users", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteUserApi(userId: string): Promise<void> {
+  await fetch(`${API_BASE_URL}/users/${userId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${getStoredToken() ?? ""}` },
+  });
+}
+
+// ── Admin: Roles ──
+
+export type RoleRead = {
+  id: string;
+  name: string;
+  description: string | null;
+};
+
+export async function listRoles(): Promise<RoleRead[]> {
+  return request<RoleRead[]>("/roles");
+}
+
+// ── Admin: Departments ──
+
+export type DepartmentRead = {
+  id: string;
+  name: string;
+  parent_id: string | null;
+};
+
+export async function listDepartments(): Promise<DepartmentRead[]> {
+  return request<DepartmentRead[]>("/departments");
+}
+
+export async function createDepartment(input: { name: string; parent_id?: string | null }): Promise<DepartmentRead> {
+  return request<DepartmentRead>("/departments", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteDepartmentApi(id: string): Promise<void> {
+  await fetch(`${API_BASE_URL}/departments/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${getStoredToken() ?? ""}` },
+  });
+}
+
+// ── Settings ──
+
+export type SystemSettings = {
+  llm: { endpoint: string; model: string; temperature: number; max_tokens: number; system_prompt: string };
+  embedding: { endpoint: string; model: string };
+  rerank: { endpoint: string; model: string; top_k: number };
+  milvus: { uri: string; collection: string; dimension: number };
+  object_storage: { endpoint: string; bucket: string; region: string };
+  chat: { history_ttl: number };
+  jwt: { algorithm: string; expire_minutes: number };
+};
+
+export async function getSettings(): Promise<SystemSettings> {
+  return request<SystemSettings>("/settings");
 }
 
 export async function submitFeedbackApi(

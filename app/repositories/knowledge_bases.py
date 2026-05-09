@@ -35,3 +35,14 @@ class KnowledgeBaseRepository(SqlAlchemyRepository[KnowledgeBase]):
         self.db.refresh(member)
         return member
 
+    def list_members(self, knowledge_base_id: uuid.UUID) -> list[KnowledgeBaseMember]:
+        statement = (
+            select(KnowledgeBaseMember)
+            .where(KnowledgeBaseMember.knowledge_base_id == knowledge_base_id)
+        )
+        return list(self.db.scalars(statement).all())
+
+    def remove_member(self, member: KnowledgeBaseMember) -> None:
+        self.db.delete(member)
+        self.db.commit()
+

@@ -1,17 +1,23 @@
 import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-import { FileUp, Library, LogOut, MessageSquare, Plus, RefreshCw, Trash2, UploadCloud } from "lucide-react";
+import { FileUp, Library, LogOut, MessageSquare, Plus, RefreshCw, RotateCcw, Settings, Trash2, UploadCloud, UserPlus, X } from "lucide-react";
 
 import {
+  addMember,
   createKnowledgeBase,
   deleteDocument,
   DocumentRead,
   DocumentUploadResult,
+  KbMember,
   KnowledgeBase,
   listDocuments,
   listKnowledgeBases,
+  listMembers,
+  removeMember,
+  retryDocument,
   uploadDocument,
 } from "../api/client";
 import { useAuth } from "../state/auth";
+import { AdminPage } from "./AdminPage";
 import { QaPage } from "./QaPage";
 
 type CreateFormState = {
@@ -30,7 +36,7 @@ const ALLOWED_ACCEPT = ".txt,.pdf,.docx,.xlsx,.pptx,.md,text/plain,text/markdown
 
 export function KnowledgeBasePage() {
   const auth = useAuth();
-  const [tab, setTab] = useState<"manage" | "qa">("manage");
+  const [tab, setTab] = useState<"manage" | "qa" | "admin">("manage");
   const [items, setItems] = useState<KnowledgeBase[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
   const [form, setForm] = useState<CreateFormState>(emptyForm);
@@ -38,7 +44,10 @@ export function KnowledgeBasePage() {
   const [uploadResult, setUploadResult] = useState<DocumentUploadResult | null>(null);
   const [documents, setDocuments] = useState<DocumentRead[]>([]);
   const [docsLoading, setDocsLoading] = useState(false);
+  const [members, setMembers] = useState<KbMember[]>([]);
+  const [memberForm, setMemberForm] = useState({ userId: "", role: "viewer" });
   const [deletingId, setDeletingId] = useState<string>("");
+  const [retryingId, setRetryingId] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
@@ -89,13 +98,23 @@ export function KnowledgeBasePage() {
     void loadKnowledgeBases();
   }, []);
 
+  const loadMembersList = useCallback(async () => {
+    if (!selected) return;
+    try {
+      const data = await listMembers(selected.id);
+      setMembers(data);
+    } catch { /* ignore */ }
+  }, [selected]);
+
   useEffect(() => {
     if (selected) {
       void loadDocumentsList();
+      void loadMembersList();
     } else {
       setDocuments([]);
+      setMembers([]);
     }
-  }, [selected, loadDocumentsList]);
+  }, [selected, loadDocumentsList, loadMembersList]);
 
   async function handleCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -154,6 +173,58 @@ export function KnowledgeBasePage() {
     }
   }
 
+  async function handleRetry(documentId: string) {
+    if (!selected) return;
+    setRetryingId(documentId);
+    try {
+      await retryDocument(selected.id, documentId);
+      void loadDocumentsList();
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "重试失败");
+    } finally {
+      setRetryingId("");
+    }
+  }
+
+  async function handleAddMember(e: FormEvent) {
+    e.preventDefault();
+    if (!selected || !memberForm.userId.trim()) return;
+    setSubmitting(true);
+    try {
+      await addMember(selected.id, memberForm.userId.trim(), memberForm.role);
+      setMemberForm({ userId: "", role: "viewer" });
+      void loadMembersList();
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "添加成员失败");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleRemoveMember(userId: string) {
+    if (!selected) return;
+    try {
+      await removeMember(selected.id, userId);
+      setMembers((prev) => prev.filter((m) => m.user_id !== userId));
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "移除成员失败");
+    }
+  }
+
+  async function handleDeleteKb() {
+    if (!selected || !window.confirm(`确认删除知识库 "${selected.name}"？此操作不可恢复。`)) return;
+    try {
+      await fetch(`${(import.meta as any).env?.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1"}/knowledge-bases/${selected.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${localStorage.getItem("enterprise_rag_token") ?? ""}` },
+      });
+      setItems((prev) => prev.filter((i) => i.id !== selected.id));
+      setSelectedId("");
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "删除知识库失败");
+    }
+  }
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -174,6 +245,12 @@ export function KnowledgeBasePage() {
           >
             <MessageSquare size={18} /> 问答
           </button>
+          <button
+            className={tab === "admin" ? "nav-item active" : "nav-item"}
+            onClick={() => setTab("admin")}
+          >
+            <Settings size={18} /> 管理
+          </button>
         </nav>
         <button className="ghost-button" onClick={auth.logout} type="button">
           <LogOut size={18} />
@@ -184,6 +261,16 @@ export function KnowledgeBasePage() {
       {tab === "qa" ? (
         <main className="workspace">
           <QaPage knowledgeBaseIds={selectedKbIds} knowledgeBaseNames={selectedKbNames} />
+        </main>
+      ) : tab === "admin" ? (
+        <main className="workspace">
+          <header className="workspace-header">
+            <div>
+              <h1>系统管理</h1>
+              <p>管理用户、角色与部门。</p>
+            </div>
+          </header>
+          <AdminPage />
         </main>
       ) : (
         <main className="workspace">
@@ -277,7 +364,12 @@ export function KnowledgeBasePage() {
               {selected ? (
                 <div className="detail-layout">
                   <div className="kb-summary">
-                    <h3>{selected.name}</h3>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
+                      <h3>{selected.name}</h3>
+                      <button className="doc-delete-btn" onClick={handleDeleteKb} title="删除知识库" style={{ color: "#dc2626" }}>
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                     <p>{selected.description || "暂无描述"}</p>
                     <dl>
                       <dt>ID</dt>
@@ -312,6 +404,60 @@ export function KnowledgeBasePage() {
                   <span>storage_path: {uploadResult.storage_path}</span>
                 </div>
               ) : null}
+            </section>
+
+            <section className="panel" style={{ gridColumn: "1" }}>
+              <div className="panel-title">
+                <h2>成员管理</h2>
+                <span>{members.length}</span>
+              </div>
+              {selected ? (
+                <>
+                  <form className="member-form" onSubmit={handleAddMember}>
+                    <input
+                      value={memberForm.userId}
+                      onChange={(e) => setMemberForm({ ...memberForm, userId: e.target.value })}
+                      placeholder="用户 ID (UUID)"
+                      style={{ fontSize: "0.82rem" }}
+                    />
+                    <select
+                      value={memberForm.role}
+                      onChange={(e) => setMemberForm({ ...memberForm, role: e.target.value })}
+                      style={{ fontSize: "0.82rem" }}
+                    >
+                      <option value="viewer">viewer</option>
+                      <option value="editor">editor</option>
+                      <option value="manager">manager</option>
+                    </select>
+                    <button className="primary-button" disabled={submitting} type="submit" style={{ padding: "6px 10px" }}>
+                      <UserPlus size={14} />
+                      添加
+                    </button>
+                  </form>
+                  <div className="member-list" style={{ marginTop: 12 }}>
+                    {members.length === 0 ? (
+                      <p className="muted">暂无成员</p>
+                    ) : (
+                      members.map((m) => (
+                        <div key={m.id} className="member-row">
+                          <div>
+                            <strong>{m.username}</strong>
+                            <span className="muted" style={{ marginLeft: 8, fontSize: "0.8rem" }}>{m.email}</span>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span className={`doc-status doc-status--ready`}>{m.role}</span>
+                            <button className="doc-delete-btn" onClick={() => handleRemoveMember(m.user_id)} title="移除成员">
+                              <X size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </>
+              ) : (
+                <p className="muted">请先选择知识库</p>
+              )}
             </section>
 
             <section className="panel wide-panel">
@@ -351,7 +497,18 @@ export function KnowledgeBasePage() {
                                 ? new Date(doc.current_version.created_at).toLocaleString("zh-CN")
                                 : "-"}
                             </td>
-                            <td>
+                            <td style={{ display: "flex", gap: 6 }}>
+                              {doc.current_version?.status === "FAILED" && (
+                                <button
+                                  className="doc-delete-btn"
+                                  onClick={() => handleRetry(doc.id)}
+                                  disabled={retryingId === doc.id}
+                                  title="重新解析"
+                                  style={{ color: "#2563eb" }}
+                                >
+                                  <RotateCcw size={16} />
+                                </button>
+                              )}
                               <button
                                 className="doc-delete-btn"
                                 onClick={() => handleDelete(doc.id)}

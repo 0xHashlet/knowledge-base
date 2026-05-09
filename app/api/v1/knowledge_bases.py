@@ -113,3 +113,44 @@ def grant_knowledge_base_member(
         raise HTTPException(status_code=404, detail="Knowledge base not found")
     return KnowledgeBaseService(db).grant_member(knowledge_base_id, data)
 
+
+@router.get("/{knowledge_base_id}/members", response_model=list[KnowledgeBaseMemberRead])
+def list_knowledge_base_members(
+    knowledge_base_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    permission_service: PermissionService = Depends(get_permission_service),
+    db: Session = Depends(get_db),
+) -> list[dict]:
+    if not permission_service.can_access_knowledge_base(current_user, knowledge_base_id):
+        raise HTTPException(status_code=403, detail="Knowledge base access denied")
+    members = KnowledgeBaseService(db).list_members(knowledge_base_id)
+    return [
+        {
+            "id": m.id,
+            "user_id": m.user_id,
+            "username": m.user.username,
+            "email": m.user.email,
+            "role": m.role,
+            "knowledge_base_id": m.knowledge_base_id,
+        }
+        for m in members
+    ]
+
+
+@router.delete("/{knowledge_base_id}/members/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_knowledge_base_member(
+    knowledge_base_id: uuid.UUID,
+    user_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    permission_service: PermissionService = Depends(get_permission_service),
+    db: Session = Depends(get_db),
+) -> Response:
+    if not permission_service.can_manage_knowledge_base(current_user, knowledge_base_id):
+        raise HTTPException(status_code=403, detail="Knowledge base management denied")
+    if KnowledgeBaseService(db).get(knowledge_base_id) is None:
+        raise HTTPException(status_code=404, detail="Knowledge base not found")
+    removed = KnowledgeBaseService(db).remove_member(knowledge_base_id, user_id)
+    if not removed:
+        raise HTTPException(status_code=404, detail="Member not found")
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+

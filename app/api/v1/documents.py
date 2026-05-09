@@ -104,3 +104,38 @@ def delete_document(
         raise HTTPException(status_code=404, detail="Document not found")
     repo.delete(doc)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/{document_id}/retry", response_model=DocumentUploadRead)
+def retry_document_parse(
+    knowledge_base_id: uuid.UUID,
+    document_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    permission_service: PermissionService = Depends(get_permission_service),
+    db: Session = Depends(get_db),
+) -> DocumentUploadRead:
+    if not permission_service.can_access_knowledge_base(current_user, knowledge_base_id):
+        raise HTTPException(status_code=403, detail="Knowledge base access denied")
+    repo = DocumentRepository(db)
+    doc = repo.get_document_with_version(document_id)
+    if doc is None or doc.knowledge_base_id != knowledge_base_id:
+        raise HTTPException(status_code=404, detail="Document not found")
+    version = repo.get_version(doc.current_version_id) if doc.current_version_id else None
+    if version is None:
+        raise HTTPException(status_code=404, detail="Document version not found")
+    if version.status != "FAILED":
+        raise HTTPException(status_code=400, detail="Only failed documents can be retried")
+
+    from app.workers.tasks.document_tasks import parse_document_version
+    parse_document_version.delay(str(version.id))
+
+    return DocumentUploadRead(
+        document_id=doc.id,
+        version_id=version.id,
+        version_number=version.version_number,
+        file_name=version.file_name,
+        file_type=version.file_type,
+        file_size=version.file_size,
+        storage_path=version.storage_path,
+        status=version.status,
+    )
