@@ -22,7 +22,7 @@ def test_settings_have_milvus_vector_store_defaults():
     assert settings.milvus_uri == "http://milvus:19530"
     assert settings.milvus_token is None
     assert settings.milvus_collection == "enterprise_rag_chunks"
-    assert settings.vector_dimension == 1536
+    assert settings.vector_dimension == 1024
 
 
 def test_settings_have_s3_compatible_object_storage_defaults():

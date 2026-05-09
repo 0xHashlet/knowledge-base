@@ -17,7 +17,8 @@ class ChunkService:
         text: str,
         parser_name: str,
         parser_version: str,
-    ) -> DocumentVersion:
+        embedding_model: str | None = None,
+    ) -> tuple[DocumentVersion, list[DocumentChunk]]:
         chunks = [
             DocumentChunk(
                 knowledge_base_id=version.knowledge_base_id,
@@ -27,7 +28,7 @@ class ChunkService:
                 content=content,
                 content_hash=hashlib.sha256(content.encode("utf-8")).hexdigest(),
                 token_count=len(content.split()),
-                embedding_model=None,
+                embedding_model=embedding_model,
                 metadata_={},
                 acl_snapshot={"knowledge_base_id": str(version.knowledge_base_id)},
                 is_active=True,
@@ -35,7 +36,10 @@ class ChunkService:
             for index, content in enumerate(self._split_text(text))
         ]
         self.repository.replace_chunks_for_version(version, chunks)
-        return self.repository.mark_version_parsed(version, text, parser_name, parser_version)
+        updated_version = self.repository.mark_version_parsed(
+            version, text, parser_name, parser_version
+        )
+        return updated_version, chunks
 
     def _split_text(self, text: str) -> list[str]:
         normalized = text.strip()

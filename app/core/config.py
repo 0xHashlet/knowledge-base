@@ -32,7 +32,10 @@ class Settings(BaseSettings):
     milvus_uri: str = "http://milvus:19530"
     milvus_token: str | None = None
     milvus_collection: str = "enterprise_rag_chunks"
-    vector_dimension: int = 1536
+    vector_dimension: int = 1024
+
+    embedding_endpoint: str = "http://localhost:8080/v1"
+    embedding_model: str = "bge-large-zh-v1.5"
 
     object_storage_endpoint: str = "http://minio:9000"
     object_storage_bucket: str = "enterprise-rag-documents"

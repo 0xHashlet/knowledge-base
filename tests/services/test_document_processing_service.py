@@ -54,14 +54,14 @@ def test_chunk_service_creates_chunks_and_marks_version_parsed():
 
     service = ChunkService(FakeRepository(), chunk_size=5, chunk_overlap=0)
 
-    result = service.store_parsed_text(
+    updated_version, created_chunks = service.store_parsed_text(
         version,
         text="alpha beta gamma",
         parser_name="plain_text",
         parser_version="1",
     )
 
-    assert result.status == DocumentVersionStatus.PARSED
+    assert updated_version.status == DocumentVersionStatus.PARSED
     assert [chunk.chunk_index for chunk in written_chunks] == [0, 1, 2]
     assert all(chunk.knowledge_base_id == version.knowledge_base_id for chunk in written_chunks)
     assert all(chunk.acl_snapshot["knowledge_base_id"] == str(version.knowledge_base_id) for chunk in written_chunks)
