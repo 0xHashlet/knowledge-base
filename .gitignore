@@ -17,6 +17,8 @@ ENV/
 # Packaging / build
 build/
 dist/
+node_modules/
+*.tsbuildinfo
 downloads/
 eggs/
 .eggs/

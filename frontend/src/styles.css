@@ -1,0 +1,313 @@
+:root {
+  color: #1f2933;
+  background: #f4f7fb;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.login-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  background: linear-gradient(135deg, #e8f1ff 0%, #f7fafc 48%, #eef7f1 100%);
+}
+
+.login-panel {
+  width: min(420px, 100%);
+  background: #ffffff;
+  border: 1px solid #dde5ef;
+  border-radius: 8px;
+  padding: 28px;
+  box-shadow: 0 24px 70px rgba(27, 39, 51, 0.12);
+}
+
+.brand-row,
+.sidebar-brand,
+.panel-title,
+.workspace-header,
+.primary-button,
+.secondary-button,
+.ghost-button {
+  display: flex;
+  align-items: center;
+}
+
+.brand-row {
+  gap: 14px;
+  margin-bottom: 26px;
+}
+
+.brand-icon {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  background: #0f766e;
+  color: #ffffff;
+  border-radius: 8px;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 24px;
+}
+
+h2 {
+  font-size: 17px;
+}
+
+h3 {
+  font-size: 20px;
+}
+
+p,
+.muted {
+  color: #627386;
+}
+
+.login-form,
+.stack-form,
+.upload-form {
+  display: grid;
+  gap: 16px;
+}
+
+label {
+  display: grid;
+  gap: 7px;
+  font-size: 14px;
+  color: #344054;
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 10px 12px;
+  color: #1f2933;
+  background: #ffffff;
+}
+
+textarea {
+  resize: vertical;
+}
+
+.primary-button,
+.secondary-button,
+.ghost-button {
+  gap: 8px;
+  justify-content: center;
+  border: 0;
+  border-radius: 6px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.primary-button {
+  background: #0f766e;
+  color: #ffffff;
+}
+
+.primary-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.secondary-button,
+.ghost-button {
+  background: #eef4f8;
+  color: #254054;
+}
+
+.error-banner {
+  border: 1px solid #fecaca;
+  background: #fff1f2;
+  color: #b42318;
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 240px 1fr;
+}
+
+.sidebar {
+  background: #102a43;
+  color: #ffffff;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.sidebar-brand {
+  gap: 10px;
+  font-weight: 700;
+}
+
+.workspace {
+  padding: 28px;
+}
+
+.workspace-header {
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 360px) minmax(280px, 420px);
+  gap: 18px;
+  align-items: start;
+}
+
+.panel {
+  background: #ffffff;
+  border: 1px solid #dde5ef;
+  border-radius: 8px;
+  padding: 18px;
+}
+
+.wide-panel {
+  grid-column: 1 / -1;
+}
+
+.panel-title {
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.panel-title span {
+  min-width: 30px;
+  text-align: center;
+  background: #e6f2f1;
+  color: #0f766e;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 13px;
+}
+
+.kb-list {
+  display: grid;
+  gap: 10px;
+}
+
+.kb-item {
+  width: 100%;
+  display: grid;
+  gap: 5px;
+  text-align: left;
+  border: 1px solid #d5dee9;
+  background: #ffffff;
+  border-radius: 6px;
+  padding: 12px;
+  cursor: pointer;
+}
+
+.kb-item span {
+  color: #627386;
+  font-size: 13px;
+}
+
+.kb-item.active {
+  border-color: #0f766e;
+  background: #effaf8;
+}
+
+.detail-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(280px, 420px);
+  gap: 20px;
+}
+
+.kb-summary {
+  display: grid;
+  gap: 12px;
+}
+
+dl {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 8px 14px;
+  margin: 0;
+}
+
+dt {
+  color: #627386;
+}
+
+dd {
+  margin: 0;
+  word-break: break-all;
+}
+
+.file-drop {
+  border: 1px dashed #9fb1c3;
+  border-radius: 8px;
+  min-height: 120px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: #52677a;
+  cursor: pointer;
+}
+
+.file-drop input {
+  display: none;
+}
+
+.result-box {
+  margin-top: 18px;
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  border-radius: 8px;
+  padding: 14px;
+  display: grid;
+  gap: 7px;
+  color: #14532d;
+  word-break: break-all;
+}
+
+@media (max-width: 860px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .content-grid,
+  .detail-layout {
+    grid-template-columns: 1fr;
+  }
+}

@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     app_version: str = "0.1.0"
     environment: Literal["local", "test", "staging", "production"] = "local"
     api_v1_prefix: str = "/api/v1"
+    cors_allowed_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
     postgres_host: str = "postgres"
     postgres_port: int = 5432

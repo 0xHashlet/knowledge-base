@@ -25,6 +25,7 @@ RAG 检索链路必须保持清晰：
 - 阶段 2.5：向量存储已从 PostgreSQL 内置向量方案切换为 Milvus。
 - 阶段 3：已实现基于 S3-compatible 对象存储的文档上传、版本记录、解析任务骨架和 chunk 生成。
 - 阶段 4：已实现权限过滤前置的关键词召回、向量召回和合并去重 service 骨架。
+- 前端 MVP：已新增独立 React 管理台，支持登录、知识库列表、创建知识库和文档上传。
 
 ## 技术栈
 
@@ -41,6 +42,9 @@ RAG 检索链路必须保持清晰：
 - pytest
 - uv
 - Docker Compose
+- React
+- Vite
+- TypeScript
 
 ## 存储边界
 
@@ -65,6 +69,7 @@ app/
   vectorstores/        Milvus 向量存储抽象与实现
   workers/             Celery worker 与任务
 tests/                 pytest 测试
+frontend/              React 管理台
 ```
 
 后端分层约定：
@@ -173,6 +178,54 @@ POST   /api/v1/knowledge-bases/{knowledge_base_id}/documents
 http://localhost:8000/docs
 ```
 
+## 前端管理台
+
+当前前端是独立 Vite + React 应用，目录位于 `frontend/`，已实现最小管理台能力：
+
+- 登录并保存 JWT。
+- 查看知识库列表。
+- 创建知识库。
+- 在知识库下上传 `text/plain` 或 PDF 文档。
+
+启动前端：
+
+```powershell
+cd C:\Users\Administrator\Desktop\dev\work\knowledge-base\frontend
+npm install
+npm run dev
+```
+
+访问地址：
+
+```text
+http://localhost:5173
+```
+
+前端默认调用后端 API：
+
+```text
+http://localhost:8000/api/v1
+```
+
+如果要修改后端地址，可复制前端环境变量文件：
+
+```powershell
+Copy-Item .env.example .env
+```
+
+然后调整：
+
+```text
+VITE_API_BASE_URL=http://localhost:8000/api/v1
+```
+
+前端生产构建检查：
+
+```powershell
+cd C:\Users\Administrator\Desktop\dev\work\knowledge-base\frontend
+npm run build
+```
+
 ## 本地调试
 
 推荐使用 Docker Desktop + WSL2 后端。当前机器已将 Docker WSL 数据目录迁到非 C 盘：
@@ -243,6 +296,7 @@ Copy-Item .env.example .env
 - `OBJECT_STORAGE_ACCESS_KEY`：对象存储 access key
 - `OBJECT_STORAGE_SECRET_KEY`：对象存储 secret key
 - `OBJECT_STORAGE_REGION`：对象存储 region
+- `CORS_ALLOWED_ORIGINS`：允许访问后端的前端地址，默认包含 `http://localhost:5173`
 
 ## MinIO 与生产迁移
 
@@ -277,3 +331,4 @@ Copy-Item .env.example .env
 3. 引入全文检索排序或 BM25 替代当前基础 `ILIKE`。
 4. 增加 rerank 接口和上下文构造。
 5. 输出引用溯源结构。
+6. 前端增加检索调试页和引用溯源展示。
