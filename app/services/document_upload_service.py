@@ -25,7 +25,14 @@ class UploadDocumentResult:
 
 
 class DocumentUploadService:
-    supported_content_types = {"text/plain", "application/pdf"}
+    supported_content_types = {
+        "text/plain",
+        "text/markdown",
+        "application/pdf",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    }
 
     def __init__(self, db_or_repository, storage=None, task_dispatcher=None):
         self.repository = db_or_repository
