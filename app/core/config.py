@@ -59,6 +59,11 @@ class Settings(BaseSettings):
     smtp_use_tls: bool = False
     smtp_sender: str = "noreply@enterprise-rag.local"
 
+    oidc_client_id: str = ""
+    oidc_client_secret: str = ""
+    oidc_discovery_url: str = ""
+    oidc_redirect_uri: str = "http://localhost:8000/api/v1/auth/sso/callback"
+
     object_storage_endpoint: str = "http://minio:9000"
     object_storage_bucket: str = "enterprise-rag-documents"
     object_storage_access_key: str = "minioadmin"
