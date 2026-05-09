@@ -45,10 +45,18 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
   }
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      headers,
+    });
+  } catch (err) {
+    if (err instanceof TypeError) {
+      throw new Error(`无法连接后端服务，请确认 ${API_BASE_URL} 已启动并允许前端访问`);
+    }
+    throw err;
+  }
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
     const message = typeof payload.detail === "string" ? payload.detail : "请求失败";
