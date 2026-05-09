@@ -46,6 +46,8 @@ class Settings(BaseSettings):
         "如果文档内容不足以回答问题，请明确告知用户。不要编造信息。"
     )
 
+    chat_history_ttl: int = 3600
+
     object_storage_endpoint: str = "http://minio:9000"
     object_storage_bucket: str = "enterprise-rag-documents"
     object_storage_access_key: str = "minioadmin"
